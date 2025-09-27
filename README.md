@@ -125,3 +125,157 @@ A arquitetura de microsserviços deve ser projetada para evoluir ao longo do tem
 - **Monitoramento Contínuo**: Monitorar o desempenho e a saúde dos serviços para identificar áreas que precisam de melhorias ou ajustes.
 - **Cultura de Aprendizado**: Fomentar uma cultura de aprendizado e adaptação, onde as equipes estão sempre buscando maneiras de melhorar a arquitetura e os processos de desenvolvimento.
 Ao adotar um design evolutivo, a arquitetura de microsserviços pode se adaptar às mudanças nas necessidades do negócio e nas tecnologias, garantindo sua relevância e eficácia ao longo do tempo.
+
+## Resilência
+
+**Princípio da Resiliência** 
+> "Em algum momento todo sistema vai falhar. Falhas são inevitáveis, mas o sistema deve continuar funcionando de forma aceitável mesmo quando partes dele falham."
+
+### O que é resiliência?
+- Resiliência é um conjunto de estratégias adotadas **intencionalmente** para a **adaptação** de um sistema quando uma falha ocorre. 
+- A principal questão é: Você se dobra ou quebra?
+- Ter estratégias de resiliência nos possibilita minimizar os riscos de perda de dados e transaçlões importantes para o negócio.
+
+**Proteger e ser Protegido**
+- Um sistema em uma arquitetura distribuída precisa adotar mecanismos de autopreservação para garantir ao máximo sua operação com **qualidade**.
+- Um sistema precisa não pode ser "egoísta" ao ponto de realizar mais requisições em um sistema que está falhando.
+- Um sistema lento no ar muitas vezes é pior do que um sistema fora do ar (efeito dominó).
+
+### Estratégias de Resiliência
+
+**Health Check**
+- Sem sinais vitais, não é possível saber a "saúde" de um sistema.
+- Um sistema que não está saudável possui uma chance de se recuperar caso o tráfego pare de ser direcionado a ele temporariamente.
+- Health check de qualidade.
+    - Deve ser simples e rápido.
+    - Deve ser específico para o serviço.
+    - Deve ser acessível publicamente (sem autenticação).
+    - Deve retornar um status HTTP adequado (200 OK, 503 Service Unavailable).
+    - Deve incluir verificações de dependências críticas (banco de dados, serviços externos).
+    - Deve ser monitorado continuamente.
+    - Deve ser utilizado por orquestradores (Kubernetes, AWS ECS, etc.)
+- Health check passivo: As informações de integridade dependem de um estimulo externo (chamadas aos pontos de extemidade) para serem persitidas e/ou obtidas. Isso não deve ser um problema se estiver publicando em um ambiente que já possui um orquestrador (Kubernetes, AWS ECS, etc.) que faz chamadas periódicas ao endpoint de health check (se devidamente configurado) para monitorar a integridade de cada pod.
+- Health check ativo: A aplicação é configurada para executar sozinha as vaklidações de integridade periodicamente e persistir o resultado em memória ou em um banco de dados rápido (Redis, Memcached, etc.). Isso é útil quando não se tem um orquestrador que faça chamadas periódicas ao endpoint de health check. Em cenários mais complexos, talvez seja mais interessante usar o modo ativo. Neste modo a execução dos HealthChecks são executados em background utilizando parâmetros globais de 'Delay' e 'Period' além do 'Predicate'. Os parâmetros 'Delay' e 'Period' podem ser perosnalizados para cada HealthCheck.  Em alguns cenários é mais interessante usar o modo ativo aliado a um cache de resultados, persistindo os resultados em memória informando os resultados para as requisições que chegam. Claro que a adoção modo ativo aliado a um cache implica em aceitar um grande **trade-off** de latência entre uma solicitação externa e a periodicidade que foi determinada para execução automática. Esta abordagem de modo ativo aliado a um cache,  pode reduzir o custo de execução das validações de integridade, melhorando a responsividade dos pontos de extremidade de validações de integridade e evitar abusos de requisições (com o custo de execução das validações de integridade) comum em ambientes complexos com muitos micros serviço que fazem chamadas para os pontos de extremidade de validações de integridade na sua aplicação.
+
+**Rate Limiting**
+- Protege o sistema baseado no que ele foi projetado para suportar.
+- Preferência programada por tipo de client.
+- Pode ser implementado em diferentes níveis:
+    - Nível de aplicação (dentro do código do serviço).
+    - Nível de API Gateway (antes de chegar ao serviço).
+    - Nível de infraestrutura (firewall, load balancer).
+- Estratégias comuns:
+    - Token Bucket
+    - Leaky Bucket
+    - Fixed Window
+    - Sliding Log
+    - Sliding Window
+- Definir políticas claras de rate limiting.
+    - Limites por usuário, IP, API key, etc.
+    - Diferentes limites para diferentes tipos de usuários (ex: free vs premium).
+    - Limites por endpoint (ex: endpoints críticos podem ter limites mais baixos).
+
+**Circuit Breaker**
+- Protege o sistema fazendo com que as requisições feitas para ele sejam negadas. Ex: 500.
+- Circuito fechado = Requisições chegam normalmente.
+- Circuito aberto = Requisições são negadas imediatamente. Requisições não chegam ao sistema. Erro instantâneo ao client.
+- Circuito meio aberto = Requisições são enviadas de forma controlada para testar se o sistema já está saudável. Em outras palavras, ele permite uma quantidade limitada de requisições para verificação se o sistema tem condições de voltar ao ar integralmente.
+
+**API Gateway**
+- Garante que requisições "inapropriadas" cheguem até o sistema: Ex: Usuário não autenticado.
+- Implementa políticas de Rate Limiting, Health Check, Logging, Monitoramento, etc.
+- Nos ajuda a organizar nossos microsserviços em contextos.
+- Uma curiosidade importante a se destacar é que a API Gateway nos ajuda a evitar o problema da "estrela da morte" (starvation) por exemplo, onde um serviço depende de muitos outros serviços, criando um acoplamento indesejado e dificultando a resiliência do sistema como um todo. Isso é feito através da implementação de padrões como o "Backend for Frontend" (BFF), onde a API Gateway atua como um intermediário entre o cliente e os microsserviços, agregando e simplificando as chamadas para os serviços backend. Dessa forma, o cliente não precisa fazer múltiplas chamadas para diferentes serviços, reduzindo a complexidade e o acoplamento entre os serviços. Além disso, a API Gateway pode implementar políticas de resiliência, como circuit breakers e rate limiting, para proteger os serviços backend de falhas e sobrecarga. Em resumo, a API Gateway é uma peça fundamental na arquitetura de microsserviços, ajudando a organizar os serviços em contextos, melhorar a resiliência do sistema e evitar problemas como a "estrela da morte".
+
+**Service Mesh**
+- Controla o tráfego de rede entre os microsserviços por meio de proxies.
+- Proxies podem ser sidecars, que são implantados junto com os microsserviços, ou podem ser proxies dedicados que gerenciam o tráfego entre os serviços.
+- Permite a implementação de políticas de segurança, como autenticação e autorização, de forma centralizada.
+- Facilita a observabilidade, permitindo monitorar e registrar o tráfego entre os microsserviços.
+- Exemplos de Service Mesh incluem Istio, Linkerd e Consul.
+- Evita implementações de proteção pelo próprio sistema.
+- mTLS (Mutual TLS): Comunicação segura entre serviços, garantindo que ambos os lados da comunicação sejam autenticados.
+- Circuit breaker, retry, timeout, fault injection, etc.
+
+**Assíncronia**
+- Evita perda de dados e transações importantes para o negócio.
+- Evita o efeito dominó.
+- Não há perda de dados no envio de uma transação de o server estiver fora.
+- Servidor pode processar a transação em seu tempo quando estiver online.
+- Entender com profundidade o message broker / sistema de stream.
+- Exemplos: RabbitMQ, Apache Kafka, AWS SQS, Google Pub/Sub, etc.
+
+**Garantias de entrega: Retry**
+- Linear - Sem backoff.
+![alt text](image.png)
+- Exponencial - Com backoff: Faz com que o tempo entre as tentativas aumente exponencialmente para ajudar o servidor a se recuperar.
+![alt text](image-1.png)
+- Exponencial com jitter - Com backoff e variação aleatória: Adiciona uma variação aleatória ao tempo de espera para evitar que múltiplas tentativas sejam feitas ao mesmo tempo.
+![alt text](image-2.png)
+
+**Garantias de entrega: Kafka**
+![alt text](image-3.png)
+- Ack 0: O produtor não espera por nenhuma confirmação do broker. A mensagem é considerada enviada assim que é escrita na rede. Isso oferece a menor latência, mas não garante que a mensagem foi realmente recebida pelo broker. Geralmente conhecida como "fire and forget". Exemplos: 
+    - Logs de eventos onde a perda ocasional de mensagens é aceitável.
+    - Dados de telemetria onde a latência é crítica e a perda de algumas mensagens não afeta significativamente a análise.
+- Ack 1: O produtor espera por uma confirmação do líder da partição antes de considerar a mensagem como enviada. Isso garante que a mensagem foi recebida pelo broker, mas pode aumentar a latência. Exemplos:
+    - Sistemas de monitoramento onde é importante garantir que os dados foram recebidos, mas a latência não é tão crítica.
+    - Aplicações de análise de dados onde a integridade dos dados é importante, mas a latência pode ser tolerada.
+- Ack all (ou -1): O produtor espera por confirmações de todos os réplicas da partição antes de considerar a mensagem como enviada. Isso oferece a maior garantia de entrega, mas também a maior latência. Exemplos:
+    - Sistemas financeiros onde a integridade dos dados é crítica e a perda de mensagens não é aceitável.
+    - Aplicações de comércio eletrônico onde a consistência dos dados é essencial para evitar problemas como pedidos duplicados ou perda de informações de pagamento.
+
+### Situações complexas
+- O que acontece se o message broker cair? 
+- Haverá perda de mensagens?
+- Seu sistema ficará fora do ar?
+- Como garantir resiliência em situações complexas?
+- Estratégias:
+    - Ter um cluster de message broker.
+    - Ter mais de um message broker (federation).
+    - Ter mais de um data center (disaster recovery).
+    - Ter mais de uma região (disaster recovery).
+    - Ter mais de uma nuvem (disaster recovery).
+    - Padrão Transactional Outbox: Funciona como um buffer local para mensagens que precisam ser enviadas para um message broker. As mensagens são armazenadas em uma tabela de banco de dados local (a "outbox") e são enviadas para o message broker em lotes, garantindo que as mensagens sejam enviadas de forma confiável e consistente, mesmo em caso de falhas no sistema.
+    ![alt text](image-4.png)
+
+### Garantias de Recebimento
+**Exemplo RabbitMQ**
+- Auto Ack = false e commit manual: Garante que a mensagem só será removida da fila quando o consumidor confirmar que a processou com sucesso. Se o consumidor falhar antes de confirmar, a mensagem permanecerá na fila e poderá ser reprocessada por outro consumidor. Essa é uma excelente abordagem para garantir a resiliência e a integridade dos dados.
+- Auto Ack = true: A mensagem é removida da fila assim que é entregue ao consumidor, independentemente de o consumidor processá-la com sucesso ou não. Isso pode levar à perda de mensagens se o consumidor falhar durante o processamento. Essa abordagem é mais rápida, mas menos confiável. Evite trabalhar com Auto Ack = true em sistemas onde a integridade dos dados é crítica.
+- Prefetch Count: Limita o número de mensagens que um consumidor pode receber antes de confirmar o processamento. Isso ajuda a evitar que um consumidor fique sobrecarregado com muitas mensagens ao mesmo tempo, melhorando a resiliência e a eficiência do sistema.
+
+### Idempotência e Políticas de Fallback
+- Saber lidar com mensagens duplicadas.
+- Garantir que o processamento de uma mensagem possa ser repetido sem efeitos colaterais indesejados.
+- Estratégias:
+    - Utilizar identificadores únicos para mensagens (por exemplo, UUIDs) para rastrear e deduplicar mensagens.
+    - Implementar lógica de compensação para desfazer efeitos colaterais de mensagens processadas anteriormente.
+    - Adotar padrões de design como o "Circuit Breaker" para lidar com falhas temporárias em serviços externos.
+  - Independência. Ex: Banco de Dados
+  - Políticas claras de fallback.
+    - Ex: Retornar dados em cache quando o serviço principal está indisponível.
+    - Ex: Retornar uma resposta padrão ou vazia quando o serviço está indisponível.
+    - Ex: Redirecionar para um serviço alternativo ou de backup.
+
+### Observabilidade
+- Monitoramento: Coleta e análise de métricas para entender o desempenho e a saúde do sistema.
+- Logging: Registro detalhado de eventos e atividades do sistema para facilitar a depuração e a análise de problemas.
+- Tracing: Rastreio de requisições através dos diferentes serviços para entender o fluxo e identificar gargalos ou falhas.
+- Ferramentas comuns: Prometheus, Grafana, ELK Stack (Elasticsearch, Logstash, Kibana), Jaeger, Zipkin, etc.
+- Alertas: Configuração de alertas para notificar a equipe sobre problemas críticos no sistema.
+- Dashboards: Criação de dashboards para visualizar métricas e logs em tempo real.
+- Análise de causa raiz: Utilização de dados coletados para investigar e resolver problemas de forma eficaz.
+- Cultura de observabilidade: Incentivar a equipe a adotar práticas de observabilidade como parte do desenvolvimento e operação do sistema.
+- **APM (Application Performance Monitoring):** Ferramentas como New Relic, Datadog, AppDynamics, etc., que fornecem monitoramento detalhado do desempenho da aplicação, incluindo tempos de resposta, taxas de erro, e outros indicadores chave de performance (KPIs).
+- **Tracing distribuído:** Ferramentas como Jaeger, Zipkin, OpenTelemetry, etc., que permitem rastrear requisições através de múltiplos serviços, ajudando a identificar gargalos e falhas em sistemas distribuídos.
+![alt text](image-5.png)
+- **Métricas personalizadas:** Coleta de métricas específicas do negócio ou da aplicação, como número de usuários ativos, transações processadas, etc., para entender melhor o impacto do sistema no negócio.
+- **Spans personalizados:** Permitem adicionar informações contextuais adicionais às requisições rastreadas, facilitando a análise e depuração. É possível identificar qual a função/método específico dentro do serviço que está causando lentidão ou falhas, ajudando a localizar e resolver problemas de forma mais eficiente.
+- **Open Telemetry:** Uma iniciativa de código aberto que fornece uma coleção de ferramentas, APIs e SDKs para instrumentação, geração, coleta e exportação de dados de telemetria (métricas, logs e traces) de aplicações. O OpenTelemetry é suportado por uma ampla comunidade e é adotado por muitas empresas e projetos de código aberto. Ele oferece suporte a várias linguagens de programação, incluindo Java, JavaScript, Python, Go, C#, Ruby, PHP, entre outras. O OpenTelemetry é compatível com várias ferramentas de monitoramento e análise, como Prometheus, Jaeger, Zipkin, Grafana, entre outras. Ele também suporta vários protocolos de exportação de dados, como OTLP (OpenTelemetry Protocol), Jaeger Thrift, Zipkin JSON, entre outros. O OpenTelemetry é uma ferramenta poderosa para melhorar a observabilidade e a resiliência de sistemas distribuídos e microsserviços.
+
+### Referências
+- Exponential backoff and jitter: https://aws.amazon.com/pt/blogs/architecture/exponential-backoff-and-jitter/
+- Retry: Remédio ou Veneno? https://www.youtube.com/watch?v=1MkPpKPyBps
+- OTEL - https://opentelemetry.io/
+

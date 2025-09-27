@@ -279,3 +279,36 @@ Ao adotar um design evolutivo, a arquitetura de microsserviços pode se adaptar 
 - Retry: Remédio ou Veneno? https://www.youtube.com/watch?v=1MkPpKPyBps
 - OTEL - https://opentelemetry.io/
 
+## Coreografia vs Orquestração
+
+### Como funciona a Coreografia?
+- Cada serviço é responsável por reagir a eventos e tomar ações apropriadas.
+- Não há um controlador central que coordena as interações entre os serviços.
+- Os serviços se comunicam diretamente entre si, geralmente através de eventos ou mensagens.
+- Cada serviço é autônomo e pode ser desenvolvido, implantado e escalado independentemente.
+- A coreografia é mais adequada para sistemas altamente distribuídos e dinâmicos, onde as interações entre os serviços são complexas e variáveis.
+- A coreografia pode ser mais difícil de implementar e gerenciar, pois requer uma boa compreensão das interações entre os serviços e uma comunicação eficaz entre as equipes de desenvolvimento.
+
+![alt text](image-6.png)
+
+**Mitigação da estrela da morte - Estratégias de APIs**
+- Divisão de APIs por contexto.
+    - Mini-API-Gateway: Um API Gateway para cada contexto.
+- A comunicação passa a ocorrer por contextos e não mais entre todos os serviços. Quando quisermos monitorar a comunicação entre os serviços, olhamos para dentro de cada contexto.
+- Não trata-se de um Service Mesh, mas sim de uma organização melhor dos serviços com uso de um API Gateway (Ex: Kong API Gateway) por contexto.
+
+![alt text](image-8.png)
+
+### Como funciona a Orquestração?
+- Um serviço central (orquestrador) é responsável por coordenar as interações entre os serviços.
+- O orquestrador define o fluxo de trabalho e as regras para a comunicação entre os serviços.
+- Os serviços se comunicam com o orquestrador, que direciona as chamadas para os serviços apropriados.
+- O orquestrador pode ser implementado como um serviço separado ou como parte de uma aplicação principal.
+- A orquestração é mais adequada para sistemas com fluxos de trabalho bem definidos e previsíveis, onde as interações entre os serviços são relativamente simples.
+- A orquestração pode ser mais fácil de implementar e gerenciar, pois o orquestrador centralizado pode fornecer uma visão clara das interações entre os serviços e facilitar a coordenação entre as equipes de desenvolvimento.
+- Existem Patterns de orquestração como o Saga Pattern entre outros que serão vistos mais a frente.
+- O orquestrador conhece a ordem e a lógica das interações entre os serviços. Caso algo falhe, o orquestrador pode tomar ações corretivas através de políticas bem definidas de fallback. Com isso podemos garantir que o sistema como um todo continue funcionando de forma aceitável até atender o objetivo principal, mesmo quando partes dele falham. Segue exemplo abaixo:
+![alt text](image-7.png)
+
+
+

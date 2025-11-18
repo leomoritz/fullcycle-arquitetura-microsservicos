@@ -613,3 +613,24 @@ Ao adotar um design evolutivo, a arquitetura de microsserviços pode se adaptar 
 #### Exemplo
 - Um sistema de e-commerce onde os serviços precisam ser criados de forma consistente e padronizada, facilitando a criação e a manutenção dos serviços.
 ![alt text](image-24.png)
+## C4 Model
+### O que é?
+- Uma abordagem para visualizar a arquitetura de software em diferentes níveis de abstração.
+- O C4 Model foi criado por Simon Brown e é composto por quatro níveis principais de diagramas: Contexto, Contêiner, Componente e Código.
+- O objetivo do C4 Model é fornecer uma maneira clara e consistente de comunicar a arquitetura de software para diferentes públicos, desde desenvolvedores até stakeholders de negócios.
+### Níveis do C4 Model
+- **Diagrama de Contexto:** Mostra o sistema como um todo e suas interações com atores externos, como usuários, sistemas externos e outras partes interessadas.
+- **Diagrama de Contêiner:** Mostra os principais contêineres (aplicações, serviços, bancos de dados, etc.) que compõem o sistema e suas interações.
+- **Diagrama de Componente:** Mostra os principais componentes dentro de um contêiner e suas interações.
+- **Diagrama de Código:** Mostra a estrutura interna de um componente, incluindo classes, interfaces e outros elementos de código.
+### Vantagens do C4 Model
+- Fornece uma maneira clara e consistente de comunicar a arquitetura de software.
+- Permite a visualização da arquitetura em diferentes níveis de abstração, facilitando a compreensão para diferentes públicos.
+- Ajuda a identificar e resolver problemas de arquitetura, como acoplamento excessivo, falta de modularidade, etc.
+- Facilita a documentação e a manutenção da arquitetura de software.
+### Exemplos
+https://c4model.com/diagrams
+https://github.com/devfullcycle/C4-Microservices
+### Ferramentas
+- graphviz: https://graphviz.org/download/
+- plantuml: https://github.com/plantuml-stdlib/C4-PlantUML

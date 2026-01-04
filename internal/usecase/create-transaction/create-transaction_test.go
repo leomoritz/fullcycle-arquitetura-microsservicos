@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/entity"
+	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/event"
+	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/pkg/events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -48,7 +50,9 @@ func TestCreateTransactionUseCase_Execute(t *testing.T) {
 	transactionGatewayMock := new(TransactionGatewayMock)
 	transactionGatewayMock.On("Create", mock.Anything).Return(nil)
 
-	useCase := NewCreateTransactionUseCase(transactionGatewayMock, accountGatewayMock)
+	dispatcher := events.NewEventDispatcher()
+	event := event.NewTransactionCreatedEvent()
+	useCase := NewCreateTransactionUseCase(transactionGatewayMock, accountGatewayMock, dispatcher, event)
 
 	input := CreateTransactionInputDTO{
 		AccountIDFrom: account1.ID,

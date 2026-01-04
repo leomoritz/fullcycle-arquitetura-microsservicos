@@ -3,6 +3,7 @@ package createtransaction
 import (
 	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/entity"
 	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/gateway"
+	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/pkg/events"
 )
 
 type CreateTransactionInputDTO struct {
@@ -18,12 +19,21 @@ type CreateTransactionOutputDTO struct {
 type CreateTransactionUseCase struct {
 	transactionGateway gateway.TransactionGateway
 	accountGateway     gateway.AccountGateway
+	eventDispatcher    events.EventDispatcherInterface
+	transactionCreated events.EventInterface
 }
 
-func NewCreateTransactionUseCase(transactionGateway gateway.TransactionGateway, accountGateway gateway.AccountGateway) *CreateTransactionUseCase {
+func NewCreateTransactionUseCase(
+	transactionGateway gateway.TransactionGateway,
+	accountGateway gateway.AccountGateway,
+	eventDispatcher events.EventDispatcherInterface,
+	transactionCreated events.EventInterface,
+) *CreateTransactionUseCase {
 	return &CreateTransactionUseCase{
 		transactionGateway: transactionGateway,
 		accountGateway:     accountGateway,
+		eventDispatcher:    eventDispatcher,
+		transactionCreated: transactionCreated,
 	}
 }
 
@@ -48,7 +58,12 @@ func (uc *CreateTransactionUseCase) Execute(input CreateTransactionInputDTO) (*C
 		return nil, err
 	}
 
-	return &CreateTransactionOutputDTO{
+	output := &CreateTransactionOutputDTO{
 		ID: transaction.ID,
-	}, nil
+	}
+
+	uc.transactionCreated.SetPayload(output)
+	uc.eventDispatcher.Dispatch(uc.transactionCreated)
+
+	return output, nil
 }

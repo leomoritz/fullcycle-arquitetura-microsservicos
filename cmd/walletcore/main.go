@@ -10,6 +10,8 @@ import (
 	createaccount "github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/usecase/create-account"
 	createclient "github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/usecase/create-client"
 	createtransaction "github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/usecase/create-transaction"
+	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/web"
+	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/web/webserver"
 	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/pkg/events"
 )
 
@@ -33,4 +35,15 @@ func main() {
 	createAccountUseCase := createaccount.NewCreateAccountUseCase(accountDb, clientDb)
 	createTransactionUseCase := createtransaction.NewCreateTransactionUseCase(transactionDb, accountDb, dispatcher, transactionCreatedEvent)
 
+	webserver := webserver.NewWebServer(":3000")
+
+	clientHandler := web.NewWebClientHandler(*createClientUseCase)
+	acountHandler := web.NewWebAccountHandler(*createAccountUseCase)
+	transactionHandler := web.NewWebTransactionHandler(*createTransactionUseCase)
+
+	webserver.AddHandler("/clients", clientHandler.CreateClient)
+	webserver.AddHandler("/accounts", acountHandler.CreateAccount)
+	webserver.AddHandler("/transactions", transactionHandler.CreateTransaction)
+
+	webserver.Start()
 }

@@ -8,13 +8,17 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/database"
 	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/event"
+	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/event/handler"
 	createaccount "github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/usecase/create-account"
 	createclient "github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/usecase/create-client"
 	createtransaction "github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/usecase/create-transaction"
 	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/web"
 	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/web/webserver"
 	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/pkg/events"
+	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/pkg/kafka"
 	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/pkg/uow"
+
+	ckafka "github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 func main() {
@@ -25,9 +29,16 @@ func main() {
 
 	defer db.Close()
 
+	configMap := ckafka.ConfigMap{
+		"bootstrap.servers": "kafka:9094",
+		"group.id":          "wallet",
+	}
+
+	kafkaProducer := kafka.NewKafkaProducer(&configMap)
+
 	dispatcher := events.NewEventDispatcher()
+	dispatcher.Register("TransactionCreated", handler.NewTransactionCreatedKafkaHandler(kafkaProducer))
 	transactionCreatedEvent := event.NewTransactionCreatedEvent()
-	// dispatcher.Register("TransactionCreated", handler)
 
 	clientDb := database.NewClientDB(db)
 	accountDb := database.NewAccountDB(db)

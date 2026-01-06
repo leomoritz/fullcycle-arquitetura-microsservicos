@@ -18,12 +18,13 @@ func NewTransactionCreatedKafkaHandler(kafkaProducer *kafka.Producer) *Transacti
 	}
 }
 
-func (h *TransactionCreatedKafkaHandler) Handle(message events.EventInterface, waitGroup *sync.WaitGroup) {
+func (h *TransactionCreatedKafkaHandler) Handle(message events.EventInterface, waitGroup *sync.WaitGroup) error {
 	defer waitGroup.Done()
 	err := h.Kafka.Publish(message, nil, "transactions") // mensagem, chave e nome do tópico
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	fmt.Println("Transaction created event published to Kafka topic 'transactions' with data:", message)
+	return nil
 }

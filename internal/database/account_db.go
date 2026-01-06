@@ -42,3 +42,19 @@ func (c *AccountDB) FindByID(id string) (*entity.Account, error) {
 	}
 	return &account, nil
 }
+
+func (c *AccountDB) UpdateBalance(account *entity.Account) error {
+	stmt, err := c.db.Prepare("UPDATE accounts SET balance = ? WHERE id = ?")
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(account.Balance, account.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

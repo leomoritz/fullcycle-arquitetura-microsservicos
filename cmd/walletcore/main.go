@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/web"
 	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/internal/web/webserver"
 	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/pkg/events"
+	"github.com/leomoritz/fullcycle-arquitetura-microsservicos/pkg/uow"
 )
 
 func main() {
@@ -29,11 +31,21 @@ func main() {
 
 	clientDb := database.NewClientDB(db)
 	accountDb := database.NewAccountDB(db)
-	transactionDb := database.NewTransactionDB(db)
+
+	ctx := context.Background()
+	uow := uow.NewUow(ctx, db)
+
+	uow.Register("AccountDB", func(tx *sql.Tx) interface{} {
+		return database.NewAccountDB(db)
+	})
+
+	uow.Register("TransactionDB", func(tx *sql.Tx) interface{} {
+		return database.NewTransactionDB(db)
+	})
 
 	createClientUseCase := createclient.NewCreateClientUseCase(clientDb)
 	createAccountUseCase := createaccount.NewCreateAccountUseCase(accountDb, clientDb)
-	createTransactionUseCase := createtransaction.NewCreateTransactionUseCase(transactionDb, accountDb, dispatcher, transactionCreatedEvent)
+	createTransactionUseCase := createtransaction.NewCreateTransactionUseCase(uow, dispatcher, transactionCreatedEvent)
 
 	webserver := webserver.NewWebServer(":3000")
 

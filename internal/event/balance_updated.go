@@ -7,7 +7,7 @@ type BalanceUpdated struct {
 	Payload interface{} `json:"payload"`
 }
 
-func NewBalanceUpdated(payload interface{}) *BalanceUpdated {
+func NewBalanceUpdated() *BalanceUpdated {
 	return &BalanceUpdated{
 		Name: "BalanceUpdated",
 	}
@@ -21,8 +21,9 @@ func (e *BalanceUpdated) GetPayload() interface{} {
 	return e.Payload
 }
 
-func (e *BalanceUpdated) SetPayload(payload interface{}) {
+func (e *BalanceUpdated) SetPayload(payload interface{}) error {
 	e.Payload = payload
+	return nil
 }
 
 func (e *BalanceUpdated) GetDateTime() time.Time {

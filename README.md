@@ -634,3 +634,34 @@ https://github.com/devfullcycle/C4-Microservices
 ### Ferramentas
 - graphviz: https://graphviz.org/download/
 - plantuml: https://github.com/plantuml-stdlib/C4-PlantUML
+
+## Exemplo Prático de Microsserviço com publicação de evento via Kafka
+- Subir serviço via docker com comando abaixo:
+```docker compose up -d --build```
+
+- Acessar o control center via browser no link: http://localhost:9021/e criar as duas filas abaixo:
+  - transactions
+  - balances
+![alt text](image-25.png)
+
+- Acessar container via terminal:
+```docker compose exec goapp bash```
+
+- Dentro do container, navegar até a pasta cmd/walletcore e rodar o comando:
+```go run main.go```
+
+- No arquivo api/client.http estão os exemplos de requisições para testar o serviço via REST API.
+
+- Antes de efetuar a chamada da requisição de transação, é necessário efetuar update na tabela accounts para adicionar saldo na conta de origem. Para isso, acessar o banco via terminal com o comando abaixo:
+```docker compose exec mysql bash```
+
+- Ao acessar o container do mysql, rodar o comando abaixo para acessar o banco:
+```mysql -uroot -p wallet```
+
+- A senha do banco é "root".
+
+![alt text](image-28.png)
+
+- Ao executar o endpoint de criar transação, uma mensagem será enviada para as filas "transactions" e "balances" do Kafka, conforme exemplo abaixo:
+![alt text](image-26.png)
+![alt text](image-27.png)

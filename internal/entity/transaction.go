@@ -27,6 +27,8 @@ func NewTransaction(accountFrom *Account, accountTo *Account, amount float64) (*
 	if err != nil {
 		return nil, err
 	}
+
+	transaction.Execute()
 	return transaction, nil
 }
 

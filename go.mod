@@ -3,6 +3,7 @@ module github.com/leomoritz/fullcycle-arquitetura-microsservicos
 go 1.22.2
 
 require (
+	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/stretchr/testify v1.11.1

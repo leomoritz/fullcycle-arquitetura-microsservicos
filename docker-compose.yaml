@@ -2,12 +2,15 @@ version: "3"
 
 services:
   goapp:
-    build: . # uses the Dockerfile in the current directory
+    build: ./wallet-core # uses the Dockerfile in the current directory
     platform: linux/amd64
     volumes:
       - ./:/app/
     ports:
       - "8080:8080"
+    depends_on:
+      - mysql
+      - kafka
   mysql:
     image: mysql:5.7
     platform: linux/amd64
@@ -19,6 +22,27 @@ services:
       - "3307:3306"
     volumes:
       - .docker/mysql:/var/lib/mysql
+  nestjsapp:
+    build: ./balance-api # uses the Dockerfile in the current directory
+    platform: linux/amd64
+    volumes:
+      - ./:/app/
+    ports:
+      - "3003:3003"
+    depends_on:
+      - mysql
+      - kafka
+  mysql-balance:
+    image: mysql:5.7
+    platform: linux/amd64
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: balance
+      MYSQL_PASSWORD: root
+    ports:
+      - "3308:3306"
+    volumes:
+      - .docker/mysql-balance:/var/lib/mysql
 
   zookeeper:
     image: "confluentinc/cp-zookeeper:6.1.0"

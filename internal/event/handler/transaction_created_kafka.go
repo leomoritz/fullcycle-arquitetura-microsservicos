@@ -25,6 +25,6 @@ func (h *TransactionCreatedKafkaHandler) Handle(message events.EventInterface, w
 		return err
 	}
 
-	fmt.Println("Transaction created event published to Kafka topic 'transactions' with data:", message)
+	fmt.Println("Transaction created event published to Kafka topic 'transactions' with data:", message.GetPayload())
 	return nil
 }

@@ -50,6 +50,7 @@ func (ev *EventDispatcher) Dispatch(event EventInterface) error {
 	if handlers, ok := ev.handlers[event.GetName()]; ok {
 		wg := &sync.WaitGroup{}
 		for _, hanlder := range handlers {
+			wg.Add(1)
 			go hanlder.Handle(event, wg)
 		}
 		wg.Wait()

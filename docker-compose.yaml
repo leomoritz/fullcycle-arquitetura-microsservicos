@@ -2,10 +2,8 @@ version: "3"
 
 services:
   goapp:
-    build: ./wallet-core # uses the Dockerfile in the current directory
+    build: ./wallet-core
     platform: linux/amd64
-    volumes:
-      - ./:/app/
     ports:
       - "8080:8080"
     depends_on:
@@ -23,10 +21,8 @@ services:
     volumes:
       - .docker/mysql:/var/lib/mysql
   nestjsapp:
-    build: ./balance-api # uses the Dockerfile in the current directory
+    build: ./balance-api
     platform: linux/amd64
-    volumes:
-      - ./:/app/
     ports:
       - "3003:3003"
     depends_on:
